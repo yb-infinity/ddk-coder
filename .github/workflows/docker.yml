@@ -21,6 +21,7 @@ jobs:
       - dmz
     outputs:
       image_tag: ${{ steps.prep.outputs.tag }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -98,6 +99,7 @@ jobs:
 
       - name: Build and Push (for branches)
         if: steps.version.outputs.is_tag == 'false'
+
         uses: docker/build-push-action@v5
         with:
           context: .
