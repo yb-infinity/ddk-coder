@@ -12,12 +12,12 @@ This project provides a Docker image that includes:
 
 ## License
 
-This project is released under the **GNU General Public License v2.0** (as provided by GitHub), with the “or (at your option) any later version” clause, because `pfrenssen/coder` is licensed under GPL-2.0-or-later.
+This project is released under the **GNU General Public License v2.0** (as provided by GitHub), with the "or (at your option) any later version" clause, because `pfrenssen/coder` is licensed under GPL-2.0-or-later.
 
 In short:
 
-> This program is free software; you can redistribute it and/or modify  
-> it under the terms of the GNU General Public License version 2  
-> (or at your option) any later version.  
+> This program is free software; you can redistribute it and/or modify
+> it under the terms of the GNU General Public License version 2
+> (or at your option) any later version.
 
 For more details, see the [LICENSE](./LICENSE) file in this repository or the [official GPL v2 text](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html).
