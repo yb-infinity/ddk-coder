@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: Run PHPCS tests
         run: |
-          docker run --rm ${{ needs.build.outputs.image_tag }} phpcs -V
+          docker run --rm ${{ needs.build.outputs.image_tag }} phpcs --version
 
   publish:
     needs: [build, test]
