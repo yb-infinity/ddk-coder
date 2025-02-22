@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-FROM alpine:3.21
+FROM alpine:3.21.3
 
 ARG BUILD_VER
 ARG BUILD_DATE
@@ -10,10 +10,10 @@ ARG CODER_VER=8.3.28
 LABEL org.opencontainers.image.authors="DrakeMazzy <i.am@mazzy.rv.ua>" \
     org.opencontainers.image.title="Drupal Coding Standards Tools" \
     org.opencontainers.image.description="Docker image with PHP 8, Composer, and Code Quality Tools" \
-    org.opencontainers.image.version="${BUILD_VER}" \
-    org.opencontainers.image.url="https://github.com/DrakeMazzy/ddk-coder" \
+    org.opencontainers.image.url="https://github.com/yb-infinity/ddk-coder" \
     org.opencontainers.image.licenses="GPL-2.0-or-later" \
-    org.opencontainers.image.created="${BUILD_DATE}"
+    org.opencontainers.image.created="${BUILD_DATE}" \
+    org.opencontainers.image.version="${BUILD_VER}"
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
