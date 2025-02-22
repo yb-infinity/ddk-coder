@@ -1,0 +1,112 @@
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main"]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ vars.DOCKERHUB_USERNAME }}/ddk-coder
+
+jobs:
+  prepare:
+    runs-on: [self-hosted, Linux, X64, dmz]
+    outputs:
+      sha: ${{ steps.vars.outputs.sha }}
+    steps:
+      - name: Set short SHA
+        id: vars
+        run: echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: [prepare]
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            arch: X64
+          - platform: linux/arm64
+            arch: ARM64
+      fail-fast: false
+    runs-on:
+      - self-hosted
+      - Linux
+      - ${{ matrix.arch }}
+      - dmz
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker Login
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Build image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          builder: dmzbuilder
+          platforms: ${{ matrix.platform }}
+          push: true
+          provenance: true
+          sbom: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          build-args: |
+            BUILD_VER=${{ github.sha }}
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            PHP_VER=${{ vars.PHP_VER }}
+            COMPOSER_VER=${{ vars.COMPOSER_VER }}
+            CODER_VER=${{ vars.CODER_VER }}
+
+      - name: Test image
+        run: docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcs --version
+
+  publish:
+    needs: [prepare, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Linux, X64, dmz]
+    steps:
+      - name: Docker Login
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Create manifest
+        run: |
+          FINAL_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}"
+          docker buildx imagetools create -t "${FINAL_TAG}" \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-amd64" \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-arm64"
+
+      - name: Cleanup tech tags
+        run: |
+          for arch in amd64 arm64; do
+            curl -s -X DELETE \
+              -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" \
+              "https://hub.docker.com/v2/repositories/${{ vars.DOCKERHUB_USERNAME }}/ddk-coder/tags/${{ needs.prepare.outputs.sha }}-${arch}"
+          done
+
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}
+          format: table
+          exit-code: 1
+          severity: CRITICAL,HIGH,MEDIUM
+
+  release:
+    needs: [prepare]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: [self-hosted, Linux, X64, dmz]
+    steps:
+      - name: Tag and cleanup
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
+          TAG="${GITHUB_REF#refs/tags/}"
+
+          docker buildx imagetools create \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG} \
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}
+
+          curl -s -X DELETE \
+            -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" \
+            "https://hub.docker.com/v2/repositories/${{ vars.DOCKERHUB_USERNAME }}/ddk-coder/tags/${{ needs.prepare.outputs.sha }}"
