@@ -60,7 +60,9 @@ jobs:
             CODER_VER=${{ vars.CODER_VER }}
 
       - name: Test image
-        run: docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcs --version
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcs --version
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcbf --version
 
   publish:
     needs: [prepare, build]

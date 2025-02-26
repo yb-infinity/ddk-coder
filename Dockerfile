@@ -41,7 +41,7 @@ RUN set -e && apk --update add --no-cache tini wget \
     cd /root/.composer && \
     composer audit --no-interaction --locked && \
     ln -s /root/.composer/vendor/bin/yaml-lint /usr/local/bin/yaml-lint && \
-    ln -s /root/.composer/vendor/bin/phpcbf /usr/local/bin/phpcbft && \
+    ln -s /root/.composer/vendor/bin/phpcbf /usr/local/bin/phpcbf && \
     ln -s /root/.composer/vendor/bin/phpcs /usr/local/bin/phpcs && \
     # configure
     echo -e "\nmemory_limit = -1" >> /etc/php${PHP_VER}/php.ini && \
