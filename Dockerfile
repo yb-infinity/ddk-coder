@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.4
-FROM alpine:3.21.3
+FROM alpine:3.22.1
 
 ARG BUILD_VER
 ARG BUILD_DATE
 ARG PHP_VER=84
-ARG COMPOSER_VER=2.8.9
+ARG COMPOSER_VER=2.8.11
 ARG CODER_VER=8.3.30
 
 LABEL org.opencontainers.image.authors="DrakeMazzy <i.am@mazzy.rv.ua>" \

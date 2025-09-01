@@ -127,7 +127,7 @@ The image supports the following build arguments:
 | Argument     | Description      | Default     |
 | ------------ | ---------------- | ----------- |
 | PHP_VER      | PHP version      | 84          |
-| COMPOSER_VER | Composer version | 2.8.9       |
+| COMPOSER_VER | Composer version | 2.8.11      |
 | CODER_VER    | Coder version    | 8.3.30      |
 | BUILD_VER    | Build version    | git SHA     |
 | BUILD_DATE   | Build date       | Current UTC |
