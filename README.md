@@ -15,7 +15,7 @@ This project provides a Docker image that includes:
 - [dealerdirect/phpcodesniffer-composer-installer](https://github.com/Dealerdirect/phpcodesniffer-composer-installer) (BSD-2-Clause)
 - [sirbrillig/phpcs-variable-analysis](https://github.com/sirbrillig/phpcs-variable-analysis) (MIT)
 - [slevomat/coding-standard](https://github.com/slevomat/coding-standard) (MIT)
-- [squizlabs/php_codesniffer](https://github.com/squizlabs/PHP_CodeSniffer) (BSD-3-Clause)
+- [squizlabs/php_codesniffer](https://github.com/PHPCSStandards/PHP_CodeSniffer) (BSD-3-Clause)
 - [symfony/yaml](https://github.com/symfony/yaml) (MIT)
 
 ## Usage
