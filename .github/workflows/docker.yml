@@ -135,6 +135,7 @@ jobs:
 
       - uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: v0.76.2
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}
           format: table
           exit-code: 1
