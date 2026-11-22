@@ -17,6 +17,7 @@ This project provides a Docker image that includes:
 - [slevomat/coding-standard](https://github.com/slevomat/coding-standard) (MIT)
 - [squizlabs/php_codesniffer](https://github.com/squizlabs/PHP_CodeSniffer) (BSD-3-Clause)
 - [symfony/yaml](https://github.com/symfony/yaml) (MIT)
+- [symfony/console](https://github.com/symfony/console) (MIT)
 
 ## Usage
 
@@ -126,9 +127,10 @@ The image supports the following build arguments:
 
 | Argument     | Description      | Default     |
 | ------------ | ---------------- | ----------- |
-| PHP_VER      | PHP version      | 84          |
-| COMPOSER_VER | Composer version | 2.8.11      |
-| CODER_VER    | Coder version    | 8.3.30      |
+| ALPINE_VER   | Alpine version   | 3.24.4      |
+| PHP_VER      | PHP version      | 85          |
+| COMPOSER_VER | Composer version | 2.11.2      |
+| CODER_VER    | Coder version    | 8.3.31      |
 | BUILD_VER    | Build version    | git SHA     |
 | BUILD_DATE   | Build date       | Current UTC |
 

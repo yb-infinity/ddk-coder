@@ -2,10 +2,10 @@ name: Build and Publish Docker Image
 
 on:
   push:
-    branches: ["main"]
-    tags: ["v*"]
+    branches: ['main']
+    tags: ['v*']
   pull_request:
-    branches: ["main"]
+    branches: ['main']
 
 env:
   REGISTRY: docker.io
@@ -27,10 +27,51 @@ jobs:
     strategy:
       matrix:
         include:
+          # PHP 8.5
           - platform: linux/amd64
             arch: X64
+            php: 85
+            alpine: 3.24.4
           - platform: linux/arm64
             arch: ARM64
+            php: 85
+            alpine: 3.24.4
+          # PHP 8.4
+          - platform: linux/amd64
+            arch: X64
+            php: 84
+            alpine: 3.24.4
+          - platform: linux/arm64
+            arch: ARM64
+            php: 84
+            alpine: 3.24.4
+          # PHP 8.3
+          - platform: linux/amd64
+            arch: X64
+            php: 83
+            alpine: 3.24.4
+          - platform: linux/arm64
+            arch: ARM64
+            php: 83
+            alpine: 3.24.4
+          # PHP 8.2
+          - platform: linux/amd64
+            arch: X64
+            php: 82
+            alpine: 3.22.8
+          - platform: linux/arm64
+            arch: ARM64
+            php: 82
+            alpine: 3.22.8
+          # PHP 8.1
+          - platform: linux/amd64
+            arch: X64
+            php: 81
+            alpine: 3.19.9
+          - platform: linux/arm64
+            arch: ARM64
+            php: 81
+            alpine: 3.19.9
       fail-fast: false
     runs-on:
       - self-hosted
@@ -38,12 +79,12 @@ jobs:
       - ${{ matrix.arch }}
       - dmz
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Docker Login
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
 
       - name: Build image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           builder: dmzbuilder
@@ -51,45 +92,50 @@ jobs:
           push: true
           provenance: true
           sbom: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
           build-args: |
             BUILD_VER=${{ github.sha }}
             BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-            PHP_VER=${{ vars.PHP_VER }}
+            PHP_VER=${{ matrix.php }}
+            ALPINE_VER=${{ matrix.alpine }}
             COMPOSER_VER=${{ vars.COMPOSER_VER }}
             CODER_VER=${{ vars.CODER_VER }}
 
       - name: Test image
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcs --version
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcbf --version
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcs --version
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} phpcbf --version
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }} yaml-lint --version
 
   publish:
     needs: [prepare, build]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Linux, X64, dmz]
+    strategy:
+      matrix:
+        php: [81, 82, 83, 84, 85]
     steps:
       - name: Docker Login
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Create manifest
+      - name: Create manifest for PHP ${{ matrix.php }}
         run: |
-          FINAL_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}"
+          FINAL_TAG="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}"
           docker buildx imagetools create -t "${FINAL_TAG}" \
-            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-amd64" \
-            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-arm64"
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-amd64" \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-arm64"
 
-      - name: Cleanup tech tags
+      - name: Cleanup tech tags for PHP ${{ matrix.php }}
         run: |
           for arch in amd64 arm64; do
             curl -s -X DELETE \
               -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" \
-              "https://hub.docker.com/v2/repositories/${{ vars.DOCKERHUB_USERNAME }}/ddk-coder/tags/${{ needs.prepare.outputs.sha }}-${arch}"
+              "https://hub.docker.com/v2/repositories/${{ vars.DOCKERHUB_USERNAME }}/ddk-coder/tags/${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-${arch}"
           done
 
-      - uses: aquasecurity/trivy-action@master
+      - uses: aquasecurity/trivy-action@0.36.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}
           format: table
           exit-code: 1
           severity: CRITICAL,HIGH,MEDIUM
@@ -98,17 +144,30 @@ jobs:
     needs: [prepare]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: [self-hosted, Linux, X64, dmz]
+    strategy:
+      matrix:
+        php: [81, 82, 83, 84, 85]
     steps:
-      - name: Tag and cleanup
+      - name: Docker Login
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Tag PHP-specific release versions
         run: |
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
           TAG="${GITHUB_REF#refs/tags/}"
 
           docker buildx imagetools create \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG} \
-            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}
+            --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}-php${{ matrix.php }} \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}
 
+          if [ "${{ matrix.php }}" = "85" ]; then
+            docker buildx imagetools create \
+              --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG} \
+              --tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php85
+          fi
+
+      - name: Cleanup temporary tags
+        run: |
           curl -s -X DELETE \
             -H "Authorization: Bearer ${{ secrets.DOCKERHUB_TOKEN }}" \
-            "https://hub.docker.com/v2/repositories/${{ vars.DOCKERHUB_USERNAME }}/ddk-coder/tags/${{ needs.prepare.outputs.sha }}"
+            "https://hub.docker.com/v2/repositories/${{ vars.DOCKERHUB_USERNAME }}/ddk-coder/tags/${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}"

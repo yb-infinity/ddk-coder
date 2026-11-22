@@ -1,11 +1,12 @@
 # syntax=docker/dockerfile:1.4
-FROM alpine:3.22.1
+ARG ALPINE_VER=3.24.4
+FROM alpine:${ALPINE_VER}
 
 ARG BUILD_VER
 ARG BUILD_DATE
-ARG PHP_VER=84
-ARG COMPOSER_VER=2.8.11
-ARG CODER_VER=8.3.30
+ARG PHP_VER=85
+ARG COMPOSER_VER=2.11.2
+ARG CODER_VER=8.3.31
 
 LABEL org.opencontainers.image.authors="DrakeMazzy <i.am@mazzy.rv.ua>" \
     org.opencontainers.image.title="Drupal Coding Standards Tools" \
@@ -37,7 +38,7 @@ RUN set -e && apk --update add --no-cache tini wget \
     chmod +x /usr/local/bin/composer && \
     # install drupal/coder
     composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true && \
-    composer global require drupal/coder:${CODER_VER} && \
+    composer global require drupal/coder:${CODER_VER} symfony/console && \
     cd /root/.composer && \
     composer audit --no-interaction --locked && \
     ln -s /root/.composer/vendor/bin/yaml-lint /usr/local/bin/yaml-lint && \
