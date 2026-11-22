@@ -133,7 +133,7 @@ jobs:
               "https://hub.docker.com/v2/repositories/${{ vars.DOCKERHUB_USERNAME }}/ddk-coder/tags/${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}-${arch}"
           done
 
-      - uses: aquasecurity/trivy-action@0.36.0
+      - uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.sha }}-php${{ matrix.php }}
           format: table
